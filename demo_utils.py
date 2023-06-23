@@ -79,10 +79,7 @@ def download_model_folder(model_size, dataset=None, from_scratch=None, DATA_FOLD
             'dataset has to be \'multiref\' or \'dstc\''
         assert from_scratch in [True, False], 'from scratch has to be True or False'
 
-        if from_scratch:
-            model_train_type = model_size + '_fs'
-        else:
-            model_train_type = model_size + '_ft'
+        model_train_type = f'{model_size}_fs' if from_scratch else f'{model_size}_ft'
         if model_train_type not in LSP_MODEL_URL[dataset]:
             k = ','.join(list(LSP_MODEL_URL[dataset].keys()))
             raise ValueError(f'\'{model_train_type}\' not exist for dataset \'{dataset}\', please choose from [{k}]')

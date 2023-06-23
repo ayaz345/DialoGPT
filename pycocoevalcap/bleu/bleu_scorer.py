@@ -63,20 +63,15 @@ def cook_test(test, refs , eff=None, n=4):
     (reflen, refmaxcounts) = refs
     testlen, counts = precook(test, n, True)
 
-    result = {}
+    result = {
+        "reflen": min((abs(l - testlen), l) for l in reflen)[1]
+        if eff == "closest"
+        else reflen,
+        "testlen": testlen,
+        "guess": [max(0, testlen - k + 1) for k in range(1, n + 1)],
+        'correct': [0] * n,
+    }
 
-    # Calculate effective reference sentence length.
-    
-    if eff == "closest":
-        result["reflen"] = min((abs(l-testlen), l) for l in reflen)[1]
-    else: ## i.e., "average" or "shortest" or None
-        result["reflen"] = reflen
-
-    result["testlen"] = testlen
-
-    result["guess"] = [max(0,testlen-k+1) for k in range(1,n+1)]
-
-    result['correct'] = [0]*n
     for (ngram, count) in counts.items():
         result["correct"][len(ngram)-1] += min(refmaxcounts.get(ngram,0), count)
 
@@ -143,8 +138,7 @@ class BleuScorer(object):
             new_test = [new_test]
         assert len(new_test) == len(self.crefs), new_test
         self.ctest = []
-        for t, rs in zip(new_test, self.crefs):
-            self.ctest.append(cook_test(t, rs))
+        self.ctest.extend(cook_test(t, rs) for t, rs in zip(new_test, self.crefs))
         self._score = None
 
         return self
@@ -180,14 +174,14 @@ class BleuScorer(object):
 
     def _single_reflen(self, reflens, option=None, testlen=None):
         
-        if option == "shortest":
-            reflen = min(reflens)
-        elif option == "average":
+        if option == "average":
             reflen = float(sum(reflens))/len(reflens)
         elif option == "closest":
             reflen = min((abs(l-testlen), l) for l in reflens)[1]
+        elif option == "shortest":
+            reflen = min(reflens)
         else:
-            assert False, "unsupported reflen option %s" % option
+            assert False, f"unsupported reflen option {option}"
 
         return reflen
 

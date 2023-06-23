@@ -13,12 +13,10 @@ refs = "./data/test.refs.txt"
 all_keys = []
 
 with open(key_file, 'r') as keys:
-	for k in iter(keys):
-		all_keys.append(k)
-
+	all_keys.extend(iter(iter(keys)))
 all_lines = {}
 with open(refs, 'r', encoding='utf-8') as all_refs:
-	for i,r in enumerate(all_refs):
+	for r in all_refs:
 		# import pdb; pdb.set_trace()
 		key = r.split('\t')[0]
 		try:	
@@ -26,9 +24,6 @@ with open(refs, 'r', encoding='utf-8') as all_refs:
 			all_lines[key] = line
 		except:
 			print(key)
-			pass
-
-			
 with open(human_hyp, 'w') as f:	
 	for key in all_keys:
 		f.write(all_lines[key.strip()] + u'\n')	

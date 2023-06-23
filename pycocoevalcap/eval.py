@@ -47,7 +47,7 @@ class COCOEvalCap:
         # Compute scores
         # =================================================
         for scorer, method in scorers:
-            print('computing %s score...'%(scorer.method()))
+            print(f'computing {scorer.method()} score...')
             score, scores = scorer.compute_score(gts, res)
             if type(method) == list:
                 for sc, scs, m in zip(score, scores, method):
@@ -65,9 +65,8 @@ class COCOEvalCap:
 
     def setImgToEvalImgs(self, scores, imgIds, method):
         for imgId, score in zip(imgIds, scores):
-            if not imgId in self.imgToEval:
-                self.imgToEval[imgId] = {}
-                self.imgToEval[imgId]["image_id"] = imgId
+            if imgId not in self.imgToEval:
+                self.imgToEval[imgId] = {"image_id": imgId}
             self.imgToEval[imgId][method] = score
 
     def setEvalImgs(self):

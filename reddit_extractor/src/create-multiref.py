@@ -31,28 +31,28 @@ with open(args.out, 'wt', encoding="utf-8") as fo:
 			els = line.split('\t')
 			header = els[0]
 			if header != 'multiref':
-				print("Ignoring line: " + line, file=sys.stderr)
+				print(f"Ignoring line: {line}", file=sys.stderr)
 			rscore1, rids1 = els[1].split(',', 1)
 			if rids1 not in data.keys():
-				print("Error: can't find data for ref ID: %s" % rids1, file=sys.stderr)
+				print(f"Error: can't find data for ref ID: {rids1}", file=sys.stderr)
 				continue
 			src, r1 = data[rids1]
 			scores = [ rscore1 ]
 			refs = [ r1 ]
 			for el in els[2:]:
 				rscoreI, ridsI = el.split(',', 1)
-				if ridsI not in data.keys():
-					print("Error: can't find data for ref ID: %s" % ridsI, file=sys.stderr)
-				else:
+				if ridsI in data:
 					srcI, rI = data[ridsI]
-					if srcI != src:
-						print("Error: mismatch source for ref ID: %s" % ridsI, file=sys.stderr)
-					else:
+					if srcI == src:
 						scores.append(rscoreI)
 						refs.append(rI)
 
+					else:
+						print(f"Error: mismatch source for ref ID: {ridsI}", file=sys.stderr)
+				else:
+					print(f"Error: can't find data for ref ID: {ridsI}", file=sys.stderr)
 			# Write multi-ref instance:
-			fo.write('%s' % src)
+			fo.write(f'{src}')
 			for i in range(len(scores)):
 				fo.write('\t%s|%s' % (scores[i], refs[i]))
 			fo.write('\n')

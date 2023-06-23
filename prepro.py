@@ -21,9 +21,11 @@ from gpt2_training.train_utils import InputFeatures_train as InputFeatures
 
 
 def _get_file_len(corpus):
-    n_line = int(sp.check_output(f"wc -l {corpus}".split(),
-                                 universal_newlines=True).split()[0])
-    return n_line
+    return int(
+        sp.check_output(
+            f"wc -l {corpus}".split(), universal_newlines=True
+        ).split()[0]
+    )
 
 
 def _norm_text(text):
@@ -137,9 +139,9 @@ def _make_feature(id_, sents, ws, eos):
     if len(input_ids) == 0:
         import pdb
         pdb.set_trace()
-    feature = InputFeatures(id_, input_ids, position_ids, token_type_ids,
-                            lm_labels, weights)
-    return feature
+    return InputFeatures(
+        id_, input_ids, position_ids, token_type_ids, lm_labels, weights
+    )
 
 
 def main(args):

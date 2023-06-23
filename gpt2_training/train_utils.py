@@ -20,12 +20,12 @@ def load_model(model, checkpoint, args, verbose=False):
     device = args.device
     if checkpoint is None or checkpoint == "None":
         if verbose:
-            logger.info('no checkpoint provided for %s!' % model._get_name())
+            logger.info(f'no checkpoint provided for {model._get_name()}!')
     else:
         if not os.path.exists(checkpoint):
-            raise ValueError('checkpoint %s not exist' % checkpoint)
+            raise ValueError(f'checkpoint {checkpoint} not exist')
         if verbose:
-            logger.info('loading finetuned model from %s' % checkpoint)
+            logger.info(f'loading finetuned model from {checkpoint}')
         model_state_dict = torch.load(checkpoint)
 
         model_state_dict = fix_state_dict_namespace(model_state_dict)
@@ -87,10 +87,7 @@ class InputFeatures_train(object):
         self.token_type_ids = token_type_ids
         self.lm_labels = lm_labels
         self.weights = weights
-        if input_len is None:
-            self.input_len = len(input_ids)
-        else:
-            self.input_len = input_len
+        self.input_len = len(input_ids) if input_len is None else input_len
 
 
 class RedditExample(object):
@@ -100,8 +97,7 @@ class RedditExample(object):
         self.response = response
 
     def __repr__(self):
-        return 'conv_id = {}\ncontext = {}\nresponse = {}'.format(
-            self.conv_id, self.context, self.response)
+        return f'conv_id = {self.conv_id}\ncontext = {self.context}\nresponse = {self.response}'
 
     def __str__(self):
         return self.__repr__()

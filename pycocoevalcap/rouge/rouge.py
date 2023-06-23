@@ -22,7 +22,7 @@ def my_lcs(string, sub):
     if(len(string)< len(sub)):
         sub, string = string, sub
 
-    lengths = [[0 for i in range(0,len(sub)+1)] for j in range(0,len(string)+1)]
+    lengths = [[0 for _ in range(0,len(sub)+1)] for _ in range(0,len(string)+1)]
 
     for j in range(1,len(sub)+1):
         for i in range(1,len(string)+1):
@@ -49,14 +49,14 @@ class Rouge():
         :param refs: list of str : COCO reference sentences for the particular image to be evaluated
         :returns score: int (ROUGE-L score for the candidate evaluated against references)
         """
-        assert(len(candidate)==1)	
-        assert(len(refs)>0)         
+        assert(len(candidate)==1)
+        assert(len(refs)>0)
         prec = []
         rec = []
 
         # split into tokens
         token_c = candidate[0].split(" ")
-    	
+
         for reference in refs:
             # split into tokens
             token_r = reference.split(" ")
@@ -68,11 +68,12 @@ class Rouge():
         prec_max = max(prec)
         rec_max = max(rec)
 
-        if(prec_max!=0 and rec_max !=0):
-            score = ((1 + self.beta**2)*prec_max*rec_max)/float(rec_max + self.beta**2*prec_max)
-        else:
-            score = 0.0
-        return score
+        return (
+            ((1 + self.beta**2) * prec_max * rec_max)
+            / float(rec_max + self.beta**2 * prec_max)
+            if (prec_max != 0 and rec_max != 0)
+            else 0.0
+        )
 
     def compute_score(self, gts, res):
         """

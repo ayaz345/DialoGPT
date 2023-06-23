@@ -13,5 +13,5 @@ TEST_KEY_FN = os.path.join(RAW_DATA_DIR, "keys.2k.txt")
 MAX_LEN = 128 #512
 MAX_CONTEXT_LEN = 64#250
 
-TAG_LIST = ["<p>", "<title>", "<anchor>"] + ["<h%s>" % i for i in range(1, 7)]
+TAG_LIST = ["<p>", "<title>", "<anchor>"] + [f"<h{i}>" for i in range(1, 7)]
 

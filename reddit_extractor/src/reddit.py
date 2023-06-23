@@ -54,7 +54,7 @@ parser.add_argument("--pre_tok", default=False, type=bool, help="whether to toke
 parser.add_argument("--clean", default=False, type=bool, help="apply some filters to significantly reduce number of instances")
 
 args = parser.parse_args()
-print("Args: %s" % args, file=sys.stderr)
+print(f"Args: {args}", file=sys.stderr)
 
 fields_subm = [ "id", "score", "num_comments", "domain", "permalink", "title" ]
 fields_comm = [ "id", "author", "parent_id", "link_id", "score", "n_char", "body"]
@@ -74,10 +74,7 @@ def get_comment_id(comment):
 
 
 def norm_sentence(txt, is_extract):
-	if is_extract:
-		return minimal_norm_sentence(txt)
-	else:
-		return gpt_norm_sentence(txt)
+	return minimal_norm_sentence(txt) if is_extract else gpt_norm_sentence(txt)
 
 
 def minimal_norm_sentence(txt):
@@ -97,7 +94,7 @@ def gpt_norm_sentence(txt):
 			continue
 		i = word.lower().find('http')
 		if i >= 0:
-			word = word[:i] + ' ' + '__url__'
+			word = f'{word[:i]} __url__'
 		words.append(word.strip())
 	txt = ' '.join(words)
 
@@ -118,7 +115,7 @@ def gpt_norm_sentence(txt):
 
 
 def extract_submissions(fld_root, fld_split, size=2e5):
-	path_in = fld_root + '/RS_%s.zst'%args.dump_name
+	path_in = f'{fld_root}/RS_{args.dump_name}.zst'
 	n = 0
 	m = 0
 	sub = 0
@@ -164,11 +161,11 @@ def extract_submissions(fld_root, fld_split, size=2e5):
 
 
 def extract_comments(fld_root, fld_split, sids):
-	path_in = fld_root + '/RC_%s.zst'%args.dump_name
+	path_in = f'{fld_root}/RC_{args.dump_name}.zst'
 	n = 0
 	m = 0
 	n_sub = len(sids)
-	lines = [[] for i in range(n_sub)]
+	lines = [[] for _ in range(n_sub)]
 	for sub in range(n_sub):
 		open(fld_split + '/rc_sub%i.tsv'%sub, 'w')
 
@@ -242,10 +239,8 @@ def get_convo(sid, rootid, cid, submissions, comments, depth=args.max_depth):
 
 
 def filter_instance(src, tgt, info):
-	# Remove offensive words:
 	if args.bl_words and not args.leaves_only:
-		bad_words = bl_words.extract_keywords(tgt)
-		if bad_words:
+		if bad_words := bl_words.extract_keywords(tgt):
 			print("skip\toffensive\t%s\t%s\tbad word(s): %s" % (info, tgt, bad_words), file=sys.stderr)
 			return True
 
@@ -255,12 +250,7 @@ def filter_instance(src, tgt, info):
 		print("skip\temptytarget\t%s\t%s" % (info, tgt), file=sys.stderr)
 		return True
 
-	# Skip if word too long:
-	toolong = False
-	for w in tgttoks:
-		if len(w) > 30:
-			toolong = True
-			break
+	toolong = any(len(w) > 30 for w in tgttoks)
 	if toolong:
 		print("skip\tlongword\t%s\t%s\tword too long" % (info, tgt), file=sys.stderr)
 		return True
@@ -278,7 +268,7 @@ def filter_instance(src, tgt, info):
 		return True
 
 	# Skip turns with URLs:
-	srctgt = src + " " + tgt
+	srctgt = f"{src} {tgt}"
 	if "__url__" in srctgt:
 		print("skip\turl\t%s\t%s\turl in tgt, or src =[%s]" % (info, tgt, src), file=sys.stderr)
 		return True
@@ -293,12 +283,10 @@ def filter_instance(src, tgt, info):
 		print("skip\tallcaps\t%s\t%s\tall caps in tgt (or src: [%s])" % (info, tgt, src), file=sys.stderr)
 		return True
 
-	# Skip word repetitions:
-	reps = False
-	for i in range(2, len(tgttoks)):
-		if tgttoks[i-2] == tgttoks[i] and tgttoks[i-1] == tgttoks[i]:
-			reps = True
-			break
+	reps = any(
+		tgttoks[i - 2] == tgttoks[i] and tgttoks[i - 1] == tgttoks[i]
+		for i in range(2, len(tgttoks))
+	)
 	if reps:
 		print("skip\trepetitions\t%s\t%s\ttoo many repetitions" % (info, tgt), file=sys.stderr)
 		return True
@@ -308,7 +296,7 @@ def filter_instance(src, tgt, info):
 
 def save_convo(path_rs, path_rc, path_out):
 	print('reading submissions...')
-	submissions = dict()
+	submissions = {}
 	with gzip.open(path_rs, mode='rt', encoding='utf-8') as f:
 		for line in f:
 			cells = line.strip('\n').strip().split('\t')
@@ -320,7 +308,7 @@ def save_convo(path_rs, path_rc, path_out):
 			submissions[get_submission_id(submission)] = submission
 
 	print('reading comments...')
-	comments = dict()
+	comments = {}
 	with gzip.open(path_rc, mode='rt', encoding='utf-8') as f:
 		for line in f:
 			cells = line.strip('\n').strip().split('\t')
@@ -368,7 +356,7 @@ def save_convo(path_rs, path_rc, path_out):
 
 		subreddit = ''
 		domain = ''
-		if sid in submissions.keys():
+		if sid in submissions:
 			subreddit = submissions[sid]['permalink'].split('/')[2].lower()
 			domain = submissions[sid]['domain'].lower()
 		info = subreddit + '\t' + domain
@@ -382,10 +370,7 @@ def save_convo(path_rs, path_rc, path_out):
 				continue
 
 		comment = comments[cid]
-		if comment['score'] == 'None':
-			score = 0
-		else:
-			score = int(comment['score'])
+		score = 0 if comment['score'] == 'None' else int(comment['score'])
 		if score < args.min_score: # filter 1
 			print("skip\tlow_score\t%s\t%s\tscore %d < %d" % (info, comment['body'], score, args.min_score), file=sys.stderr)
 			continue
@@ -409,7 +394,7 @@ def save_convo(path_rs, path_rc, path_out):
 						skip_target = True
 				if bl_words.extract_keywords(txts[i]) or skip_target:
 					sc = '0.0'
-				txts[i] = sc + ' ' + txts[i]
+				txts[i] = f'{sc} {txts[i]}'
 
 		src = ' EOS '.join(txts[:-1])
 		tgt = txts[-1]
@@ -433,19 +418,19 @@ def extract():
 	makedirs(fld_split)
 	sids, ms, ns = extract_submissions(fld_root_in, fld_split, size=args.split_size)
 	mc, nc = extract_comments(fld_root_in, fld_split, sids)
-	with open(fld_split + '/stat.tsv', 'a') as f:
+	with open(f'{fld_split}/stat.tsv', 'a') as f:
 		f.write('\t'.join(map(str, [args.dump_name, mc, nc, ms, ns])) + '\n')
 
 
 def build_conv(fld_out):
 	makedirs(fld_out)
-	path_out = fld_out + '/%s.tsv'%args.dump_name
+	path_out = f'{fld_out}/{args.dump_name}.tsv'
 	print(path_out)
 
 	if args.parallel:
-		fs = open(fld_out + '/' + args.dump_name + '.stat.tsv', 'w')
+		fs = open(f'{fld_out}/{args.dump_name}.stat.tsv', 'w')
 	else:
-		fs = open(fld_out + '/stat.tsv', 'a')
+		fs = open(f'{fld_out}/stat.tsv', 'a')
 
 	sub = 0
 	sum_m = 0
@@ -454,7 +439,7 @@ def build_conv(fld_out):
 		path_rs = fld_split + '/rs_sub%i.tsv.gz'%sub
 		if not os.path.exists(path_rs):
 			if sub == 0:
-				print('no such file: '+path_rs)
+				print(f'no such file: {path_rs}')
 			break
 		print('-'*10 + ' sub%i '%sub + '-'*10)
 		path_rc = path_rs.replace('/rs_', '/rc_')
@@ -481,9 +466,7 @@ def load_keys(key_file):
 
 if args.freq_words:
 	with open(args.freq_words, 'rt', encoding="utf-8") as f:
-		n = 0
-		for line in f:
-			n += 1
+		for n, line in enumerate(f, start=1):
 			w = line.rstrip().lower()
 			args.freq_words[w] = n
 
@@ -514,12 +497,12 @@ else:
 
 fld_root_in = args.reddit_input
 fld_root_out = args.reddit_output
-fld_split = fld_root_out + '/extract/%s'%(args.dump_name)
+fld_split = f'{fld_root_out}/extract/{args.dump_name}'
 
 if args.task == 'extract':
 	extract()
 elif args.task == 'conv':
-	fld_out = fld_root_out + '/conv'
+	fld_out = f'{fld_root_out}/conv'
 	build_conv(fld_out)
 else:
-	print("Unknown task: %s" % args.task, file=sys.stderr)
+	print(f"Unknown task: {args.task}", file=sys.stderr)

@@ -76,14 +76,13 @@ class GPT2FeatureDataset(Dataset):
         try:
             for s in ['context_len', 'response_len']:
                 if s in feat_dict.keys():
-                    print("db file missing "+s)
+                    print(f"db file missing {s}")
                     del feat_dict[s]
         except Exception:
             import pdb
             pdb.set_trace()
 
-        feat = InputFeatures_train(**feat_dict)
-        return feat
+        return InputFeatures_train(**feat_dict)
 
     def __len__(self):
         return len(self.features)
@@ -139,10 +138,12 @@ class BucketingDataLoader(object):
             dataset = GPT2FeatureDataset(trunc_chunk, self.max_len)
             sampler = BucketSampler(lens, self.bucket_size, self.batch_size,
                                     droplast=True, shuffle=self.shuffle)
-            loader = DataLoader(dataset, batch_sampler=sampler,
-                                num_workers=0,  # can test multi-worker
-                                collate_fn=GPT2FeatureDataset.collate)
-            yield from loader
+            yield from DataLoader(
+                dataset,
+                batch_sampler=sampler,
+                num_workers=0,  # can test multi-worker
+                collate_fn=GPT2FeatureDataset.collate,
+            )
 
     def __len__(self):
         raise NotImplementedError()
@@ -256,8 +257,7 @@ class DynamicBatchingLoader(object):
                             break
                     features = convert_examples_to_features_dynamic(
                         examples, self.toker, self.max_seq_length)
-                    batch = self._batch_feature(features)
-                    yield batch
+                    yield self._batch_feature(features)
         except StopIteration:
             pass
 
@@ -286,6 +286,8 @@ class DynamicBatchingLoader(object):
                 context_len, response_len)
 
     def get_len(self, corpus):
-        n_line = int(sp.check_output(f"wc -l {corpus}".split(),
-                                     universal_newlines=True).split()[0])
-        return n_line
+        return int(
+            sp.check_output(
+                f"wc -l {corpus}".split(), universal_newlines=True
+            ).split()[0]
+        )

@@ -26,8 +26,11 @@ parser.add_argument('--data', type=str, default='dummy',
                     help='choose from dummy, small and full')
 dargs = parser.parse_args()
 
-assert dargs.data == 'dummy' or dargs.data == 'small' or dargs.data == 'full' , \
-    'The specified data option is not support!'
+assert dargs.data in [
+    'dummy',
+    'small',
+    'full',
+], 'The specified data option is not support!'
 
 
 logging.basicConfig(
@@ -117,8 +120,8 @@ args = [
 ]
 
 arg = ' '.join(args)
-train_cmd = train_cmd + ' ' + arg
-print(PYTHON_EXE + ' ' +train_cmd)
+train_cmd = f'{train_cmd} {arg}'
+print(f'{PYTHON_EXE} {train_cmd}')
 logger.info('#########################################################################')
 with open('./output.log', 'wb') as f: 
     process = sp.Popen([PYTHON_EXE] + train_cmd.split(' '), stdout=sp.PIPE, stderr=sp.STDOUT, cwd=PROJECT_FOLDER)
